@@ -1,177 +1,162 @@
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <iomanip>
 #include <string>
-#include <limits>
-
 using namespace std;
 
-class Bill {
-private:
-    string item;
-    int rate, quantity;
+const int MAX_ITEMS = 100;
+
+class Item {
 public:
-    Bill() : item(""), rate(0), quantity(0) {}
-
-    void setItem(const string& item) { this->item = item; }
-    void setRate(int rate) { this->rate = rate; }
-    void setQuantity(int quantity) { this->quantity = quantity; }
-
-    string getItem() const { return item; }
-    int getRate() const { return rate; }
-    int getQuantity() const { return quantity; }
-};
-
-void clearInventory() {
-    ofstream out("Bill.txt", ios::trunc);
-    if (out) {
-        cout << "Inventory cleared successfully!\n";
-    } else {
-        cerr << "Error: Unable to clear inventory.\n";
-    }
-}
-
-void addItem(Bill& b) {
-    string item;
-    int rate, quantity;
-
-    cout << "Enter Item Name: ";
-    cin >> item;
-    cout << "Enter Rate of Item: ";
-    cin >> rate;
-    cout << "Enter Quantity of Item: ";
-    cin >> quantity;
-
-    b.setItem(item);
-    b.setRate(rate);
-    b.setQuantity(quantity);
-
-    ofstream out("Bill.txt", ios::app);
-    if (out) {
-        out << b.getItem() << " : " << b.getRate() << " : " << b.getQuantity() << endl;
-        cout << "Item added successfully!\n";
-    } else {
-        cerr << "Error: Unable to open file for writing.\n";
-    }
-}
-
-void displayInventory() {
-    ifstream in("Bill.txt");
-    if (in) {
-        cout << "\nCurrent Inventory:\n";
-        cout << left << setw(15) << "Item" << setw(10) << "Rate" << setw(10) << "Quantity" << endl;
-        cout << "--------------------------------------" << endl;
-        string line;
-        while (getline(in, line)) {
-            stringstream ss(line);
-            string itemName;
-            int itemRate, itemQuantity;
-            char delimiter;
-            ss >> itemName >> delimiter >> itemRate >> delimiter >> itemQuantity;
-            cout << left << setw(15) << itemName << setw(10) << itemRate << setw(10) << itemQuantity << endl;
-        }
-    } else {
-        cerr << "Error: Unable to open file.\n";
-    }
-}
-
-void printBill() {
-    int totalBill = 0;
-    string item;
+    string name;
+    int rate;
     int quantity;
 
-    cout << "\nStart Adding Items to the Bill (Type 'done' to finish):\n";
-    while (true) {
-        cout << "Enter Item Name: ";
-        cin >> item;
-        if (item == "done") break;
+    Item() {
+        name = "";
+        rate = 0;
+        quantity = 0;
+    }
 
-        cout << "Enter Quantity: ";
+    Item(string name, int rate, int quantity) {
+        this->name = name;
+        this->rate = rate;
+        this->quantity = quantity;
+    }
+};
+
+class BillSystem {
+private:
+    Item inventory[MAX_ITEMS];
+    int itemCount;
+
+public:
+    BillSystem() {
+        itemCount = 0;
+    }
+
+    void addItem() {
+        if (itemCount >= MAX_ITEMS) {
+            cout << "Inventory Full! Cannot add more items.\n";
+            return;
+        }
+
+        string name;
+        int rate, quantity;
+        cout << "Enter Item Name: ";
+        cin >> name;
+        cout << "Enter Item Rate: ";
+        cin >> rate;
+        cout << "Enter Item Quantity: ";
         cin >> quantity;
 
-        ifstream in("Bill.txt");
-        ofstream out("BillTemp.txt");
-        bool itemFound = false;
-        if (in && out) {
-            string line;
-            while (getline(in, line)) {
-                stringstream ss(line);
-                string itemName;
-                int itemRate, itemQuantity;
-                char delimiter;
-                ss >> itemName >> delimiter >> itemRate >> delimiter >> itemQuantity;
+        inventory[itemCount++] = Item(name, rate, quantity);
+        cout << "Item added successfully!\n";
+    }
 
-                if (item == itemName) {
-                    itemFound = true;
-                    if (quantity <= itemQuantity) {
-                        int amount = itemRate * quantity;
+    void displayInventory() {
+        if (itemCount == 0) {
+            cout << "Inventory is empty.\n";
+            return;
+        }
+
+        cout << "\nCurrent Inventory:\n";
+        cout << left << setw(15) << "Item" << setw(10) << "Rate" << setw(10) << "Quantity" << "\n";
+        cout << "--------------------------------------\n";
+
+        for (int i = 0; i < itemCount; i++) {
+            cout << left << setw(15) << inventory[i].name
+                 << setw(10) << inventory[i].rate
+                 << setw(10) << inventory[i].quantity << "\n";
+        }
+    }
+
+    void clearInventory() {
+        itemCount = 0;
+        cout << "Inventory cleared!\n";
+    }
+
+    void startBilling() {
+        int totalBill = 0;
+        string itemName;
+        int qty;
+
+        cout << "\nStart Billing (Type 'done' to finish):\n";
+
+        while (true) {
+            cout << "Enter Item Name: ";
+            cin >> itemName;
+            if (itemName == "done") break;
+
+            cout << "Enter Quantity: ";
+            cin >> qty;
+
+            bool found = false;
+            for (int i = 0; i < itemCount; i++) {
+                if (inventory[i].name == itemName) {
+                    found = true;
+
+                    if (qty <= inventory[i].quantity) {
+                        int amount = qty * inventory[i].rate;
                         totalBill += amount;
-                        cout << left << setw(15) << "Item" << setw(10) << "Rate" << setw(10) << "Quantity" << setw(10) << "Amount" << endl;
-                        cout << left << setw(15) << itemName << setw(10) << itemRate << setw(10) << quantity << setw(10) << amount << endl;
-                        itemQuantity -= quantity;
+                        inventory[i].quantity -= qty;
+
+                        cout << left << setw(15) << "Item"
+                             << setw(10) << "Rate"
+                             << setw(10) << "Qty"
+                             << setw(10) << "Amount" << "\n";
+
+                        cout << left << setw(15) << inventory[i].name
+                             << setw(10) << inventory[i].rate
+                             << setw(10) << qty
+                             << setw(10) << amount << "\n";
                     } else {
-                        cout << "Insufficient quantity for " << item << ".\n";
+                        cout << "Insufficient quantity available!\n";
                     }
+                    break;
                 }
-                out << itemName << " : " << itemRate << " : " << itemQuantity << endl;
             }
-            if (!itemFound) cout << "Item not available!\n";
-            in.close();
-            out.close();
-            remove("Bill.txt");
-            rename("BillTemp.txt", "Bill.txt");
-        } else {
-            cerr << "Error: Unable to open file.\n";
+
+            if (!found) {
+                cout << "Item not found in inventory!\n";
+            }
         }
+
+        cout << "\nTotal Bill: $" << totalBill << "\n";
+        cout << "Thank you for shopping!\n";
     }
-    cout << "\nTotal Bill: $" << totalBill << endl;
-    cout << "Thank you for shopping!\n";
-}
 
-void mainMenu() {
-    Bill b;
-    bool exit = false;
-
-    while (!exit) {
+    void showMenu() {
         int choice;
-        cout << "\n==============================\n";
-        cout << "   Super Market Billing System\n";
-        cout << "==============================\n";
-        cout << "1. Add New Item to Inventory\n";
-        cout << "2. View Inventory\n";
-        cout << "3. Clear Inventory\n";
-        cout << "4. Start New Bill\n";
-        cout << "5. Exit\n";
-        cout << "==============================\n";
-        cout << "Enter Choice: ";
-        cin >> choice;
+        bool running = true;
 
-        switch (choice) {
-            case 1:
-                addItem(b);
-                break;
-            case 2:
-                displayInventory();
-                break;
-            case 3:
-                clearInventory();
-                break;
-            case 4:
-                printBill();
-                break;
-            case 5:
-                exit = true;
-                cout << "Exiting... Thank you for using the system!\n";
-                break;
-            default:
-                cout << "Invalid choice. Please enter a number between 1 and 5.\n";
-                break;
+        while (running) {
+            cout << "\n==============================\n";
+            cout << "   Super Market Billing System\n";
+            cout << "==============================\n";
+            cout << "1. Add Item to Inventory\n";
+            cout << "2. View Inventory\n";
+            cout << "3. Clear Inventory\n";
+            cout << "4. Start Billing\n";
+            cout << "5. Exit\n";
+            cout << "==============================\n";
+            cout << "Enter your choice: ";
+            cin >> choice;
+
+            switch (choice) {
+                case 1: addItem(); break;
+                case 2: displayInventory(); break;
+                case 3: clearInventory(); break;
+                case 4: startBilling(); break;
+                case 5: running = false; cout << "Exiting...\n"; break;
+                default: cout << "Invalid choice. Try again.\n";
+            }
         }
     }
-}
+};
 
+// Main function
 int main() {
-    mainMenu();
+    BillSystem system;
+    system.showMenu();
     return 0;
 }
