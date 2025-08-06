@@ -34,11 +34,3 @@ This is a **console-based Super Market Billing System** developed using **Object
 
 ---
 
-## 🔧 How to Run
-
-### Using Terminal:
-
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/your-username/super-market-billing.git
-   cd super-market-billing
